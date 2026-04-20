@@ -1,70 +1,65 @@
-const form = document.getElementById('form');
-const username = document.getElementById('username');
-const email = document.getElementById('email');
-const password = document.getElementById('password');
-const password2 = document.getElementById('password2');
+const container = document.querySelector('.container');
+const seats = document.querySelectorAll('.row .seat:not(.occupied)');
+const count = document.getElementById('count');
+const total = document.getElementById('total');
+const movieSelect = document.getElementById('movie');
 
-function showError(input, message) {
-  const formControl = input.parentElement;
-  formControl.className = 'form-control error';
-  const small = formControl.querySelector('small');
-  small.innerText = message;
+populateUI();
+
+let ticketPrice = +movieSelect.value;
+
+function setMovieData(movieIndex, moviePrice) {
+  localStorage.setItem('selectedMovieIndex', movieIndex);
+  localStorage.setItem('selectedMoviePrice', moviePrice);
 }
 
-function showSuccess(input) {
-  const formControl = input.parentElement;
-  formControl.className = 'form-control success';
+function updateSelectedCount() {
+  const selectedSeats = document.querySelectorAll('.row .seat.selected');
+
+  const seatsIndex = [...selectedSeats].map((seat) => [...seats].indexOf(seat));
+
+  localStorage.setItem('selectedSeats', JSON.stringify(seatsIndex));
+
+  const selectedSeatsCount = selectedSeats.length;
+  count.innerText = selectedSeatsCount;
+  total.innerText = selectedSeatsCount * ticketPrice;
 }
 
-const isValidEmail = (email) => {
-  return String(email)
-    .toLowerCase()
-    .match(
-      /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|.(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
-    );
-};
+function populateUI() {
+  const selectedSeats = JSON.parse(localStorage.getItem('selectedSeats'));
 
-function checkRequired(inputArr) {
-  inputArr.forEach((input) => {
-    if (input.value === '') {
-      showError(input, `${getFieldName(input)} is required`);
-    } else {
-      showSuccess(input);
-    }
-  });
-}
+  if (selectedSeats !== null && selectedSeats.length > 0) {
+    seats.forEach((seat, index) => {
+      if (selectedSeats.indexOf(index) > -1) {
+        seat.classList.add('selected');
+      }
+    });
+  }
 
-function checkLenght(input, min, max) {
-  if (input.value.length < min) {
-    showError(
-      input,
-      `${getFieldName(input)} must be at least ${min} characters`,
-    );
-  } else if (input.value.length > max) {
-    showError(
-      input,
-      `${getFieldName(input)} must be less than ${max} characters`,
-    );
-  } else {
-    showSuccess(input);
+  const selectedMovieIndex = localStorage.getItem('selectedMovieIndex');
+
+  if (selectedMovieIndex !== null) {
+    movieSelect.selectedIndex = selectedMovieIndex;
   }
 }
 
-function checkPasswordsMatch(input1, input2) {
-  if (input1.value !== input2.value) {
-    showError(input2, 'Passwords do not match');
-  }
-}
+movieSelect.addEventListener('change', (e) => {
+  ticketPrice = +e.target.value;
 
-function getFieldName(input) {
-  return input.id.charAt(0).toUpperCase() + input.id.slice(1);
-}
+  setMovieData(e.target.selectedIndex, e.target.value);
 
-form.addEventListener('submit', (e) => {
-  e.preventDefault();
-
-  checkRequired([username, email, password, password2]);
-  checkLenght(username, 3, 15);
-  checkLenght(password, 6, 25);
-  checkPasswordsMatch(password, password2);
+  updateSelectedCount();
 });
+
+container.addEventListener('click', (e) => {
+  if (
+    e.target.classList.contains('seat') &&
+    !e.target.classList.contains('occupied')
+  ) {
+    e.target.classList.toggle('selected');
+
+    updateSelectedCount();
+  }
+});
+
+updateSelectedCount();
