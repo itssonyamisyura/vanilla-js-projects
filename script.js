@@ -1,34 +1,86 @@
-const currencyElement_one = document.getElementById('currency-one');
-const currencyElement_two = document.getElementById('currency-two');
-const amountElement_one = document.getElementById('amount-one');
-const amountElement_two = document.getElementById('amount-two');
-const rateEl = document.getElementById('rate');
-const swap = document.getElementById('swap');
+const main = document.getElementById('main');
+const showMillionairesBtn = document.getElementById('show-millionaires');
+const sortBtn = document.getElementById('sort');
+const addUserBtn = document.getElementById('add-user');
+const doubleBtn = document.getElementById('double');
+const calculateWealthBtn = document.getElementById('calculate-wealth');
 
-function calculate() {
-  const currency_one = currencyElement_one.value;
-  const currency_two = currencyElement_two.value;
+let data = [];
 
-  fetch(`https://open.er-api.com/v6/latest/${currency_one}`)
-    .then((res) => res.json())
-    .then((data) => {
-      const rate = data.rates[currency_two];
+getRandomUser();
+getRandomUser();
+getRandomUser();
 
-      rateEl.innerText = `1 ${currency_one} = ${rate} ${currency_two}`;
+async function getRandomUser() {
+  const res = await fetch('https://randomuser.me/api');
+  const data = await res.json();
 
-      amountElement_two.value = (amountElement_one.value * rate).toFixed(2);
-    });
+  const user = data.results[0];
+  console.log(user);
+
+  const newUser = {
+    name: `${user.name.first} ${user.name.last}`,
+    money: Math.floor(Math.random() * 1000000),
+  };
+  addData(newUser);
 }
 
-currencyElement_one.addEventListener('change', calculate);
-currencyElement_two.addEventListener('change', calculate);
-amountElement_one.addEventListener('input', calculate);
-amountElement_two.addEventListener('input', calculate);
+function doubleMoney() {
+  data = data.map((user) => {
+    return {
+      ...user,
+      money: user.money * 2,
+    };
+  });
+  updateDOM();
+}
 
-swap.addEventListener('click', () => {
-  const temp = currencyElement_one.value;
-  currencyElement_one.value = currencyElement_two.value;
-  currencyElement_two.value = temp;
-  calculate();
-});
-calculate();
+function sortByRichest() {
+  data.sort((a, b) => {
+    return b.money - a.money;
+  });
+  updateDOM();
+}
+
+function showOnlyMillionaires() {
+  data = data.filter((item) => {
+    return item.money > 1000000;
+  });
+  updateDOM();
+}
+
+function calculateWealth() {
+  const wealth = data.reduce((acc, user) => (acc += user.money), 0);
+  const wealthElement = document.createElement('div');
+  wealthElement.innerHTML = `<h3>Total Wealth: <strong
+  >${formatMoney(wealth)}</strong></h3>`;
+
+  main.appendChild(wealthElement);
+}
+
+function addData(obj) {
+  data.push(obj);
+
+  updateDOM();
+}
+
+function updateDOM(providedData = data) {
+  main.innerHTML = '<h2><strong>Person</strong> Wealth</h2>';
+
+  providedData.forEach((item) => {
+    const element = document.createElement('div');
+    element.classList.add('person');
+    element.innerHTML = `<strong>${item.name}</strong> ${formatMoney(item.money)}`;
+    main.appendChild(element);
+  });
+}
+
+function formatMoney(number) {
+  return '$' + number.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+}
+
+addUserBtn.addEventListener('click', getRandomUser);
+doubleBtn.addEventListener('click', doubleMoney);
+sortBtn.addEventListener('click', sortByRichest);
+showMillionairesBtn.addEventListener('click', showOnlyMillionaires);
+calculateWealthBtn.addEventListener('click', calculateWealth);
