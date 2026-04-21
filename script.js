@@ -1,65 +1,34 @@
-const container = document.querySelector('.container');
-const seats = document.querySelectorAll('.row .seat:not(.occupied)');
-const count = document.getElementById('count');
-const total = document.getElementById('total');
-const movieSelect = document.getElementById('movie');
+const currencyElement_one = document.getElementById('currency-one');
+const currencyElement_two = document.getElementById('currency-two');
+const amountElement_one = document.getElementById('amount-one');
+const amountElement_two = document.getElementById('amount-two');
+const rateEl = document.getElementById('rate');
+const swap = document.getElementById('swap');
 
-populateUI();
+function calculate() {
+  const currency_one = currencyElement_one.value;
+  const currency_two = currencyElement_two.value;
 
-let ticketPrice = +movieSelect.value;
+  fetch(`https://open.er-api.com/v6/latest/${currency_one}`)
+    .then((res) => res.json())
+    .then((data) => {
+      const rate = data.rates[currency_two];
 
-function setMovieData(movieIndex, moviePrice) {
-  localStorage.setItem('selectedMovieIndex', movieIndex);
-  localStorage.setItem('selectedMoviePrice', moviePrice);
-}
+      rateEl.innerText = `1 ${currency_one} = ${rate} ${currency_two}`;
 
-function updateSelectedCount() {
-  const selectedSeats = document.querySelectorAll('.row .seat.selected');
-
-  const seatsIndex = [...selectedSeats].map((seat) => [...seats].indexOf(seat));
-
-  localStorage.setItem('selectedSeats', JSON.stringify(seatsIndex));
-
-  const selectedSeatsCount = selectedSeats.length;
-  count.innerText = selectedSeatsCount;
-  total.innerText = selectedSeatsCount * ticketPrice;
-}
-
-function populateUI() {
-  const selectedSeats = JSON.parse(localStorage.getItem('selectedSeats'));
-
-  if (selectedSeats !== null && selectedSeats.length > 0) {
-    seats.forEach((seat, index) => {
-      if (selectedSeats.indexOf(index) > -1) {
-        seat.classList.add('selected');
-      }
+      amountElement_two.value = (amountElement_one.value * rate).toFixed(2);
     });
-  }
-
-  const selectedMovieIndex = localStorage.getItem('selectedMovieIndex');
-
-  if (selectedMovieIndex !== null) {
-    movieSelect.selectedIndex = selectedMovieIndex;
-  }
 }
 
-movieSelect.addEventListener('change', (e) => {
-  ticketPrice = +e.target.value;
+currencyElement_one.addEventListener('change', calculate);
+currencyElement_two.addEventListener('change', calculate);
+amountElement_one.addEventListener('input', calculate);
+amountElement_two.addEventListener('input', calculate);
 
-  setMovieData(e.target.selectedIndex, e.target.value);
-
-  updateSelectedCount();
+swap.addEventListener('click', () => {
+  const temp = currencyElement_one.value;
+  currencyElement_one.value = currencyElement_two.value;
+  currencyElement_two.value = temp;
+  calculate();
 });
-
-container.addEventListener('click', (e) => {
-  if (
-    e.target.classList.contains('seat') &&
-    !e.target.classList.contains('occupied')
-  ) {
-    e.target.classList.toggle('selected');
-
-    updateSelectedCount();
-  }
-});
-
-updateSelectedCount();
+calculate();
