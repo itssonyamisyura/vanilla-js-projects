@@ -1,86 +1,128 @@
-const main = document.getElementById('main');
-const showMillionairesBtn = document.getElementById('show-millionaires');
-const sortBtn = document.getElementById('sort');
-const addUserBtn = document.getElementById('add-user');
-const doubleBtn = document.getElementById('double');
-const calculateWealthBtn = document.getElementById('calculate-wealth');
+const wordEl = document.getElementById('word');
+const wrongLettersEl = document.getElementById('wrong-letters');
+const playAgainBtn = document.getElementById('play-button');
+const popup = document.getElementById('popup-container');
+const notification = document.getElementById('notification-container');
+const finalMessage = document.getElementById('final-message');
+const finalMessageRevealWord = document.getElementById(
+  'final-message-reveal-word',
+);
+const figureParts = document.querySelectorAll('.figure-part');
 
-let data = [];
+const words = [
+  'interface',
+  'window',
+  'telephone',
+  'wizard',
+  'mountain',
+  'kitten',
+  'notebook',
+  'application',
+  'elephant',
+  'elixir',
+  'computer',
+  'proramming',
+  'solstice',
+  'keyboard',
+  'shoe',
+  'bottle',
+  'backpack',
+  'riverside',
+  'picture',
+  'house',
+];
 
-getRandomUser();
-getRandomUser();
-getRandomUser();
+let selectedWord = words[Math.floor(Math.random() * words.length)];
 
-async function getRandomUser() {
-  const res = await fetch('https://randomuser.me/api');
-  const data = await res.json();
+const correctLetters = ['e', 'l'];
+const wrongLetters = [];
 
-  const user = data.results[0];
-  console.log(user);
+function displayWord() {
+  wordEl.innerHTML = `
+  ${selectedWord
+    .split('')
+    .map(
+      (letter) =>
+        `<span class="letter">
+        ${correctLetters.includes(letter) ? letter : ''}
+      </span>`,
+    )
+    .join('')}
+`;
 
-  const newUser = {
-    name: `${user.name.first} ${user.name.last}`,
-    money: Math.floor(Math.random() * 1000000),
-  };
-  addData(newUser);
+  const innerWord = wordEl.innerText.replace(/\n/g, '');
+
+  if (innerWord === selectedWord) {
+    finalMessage.innerText = 'Congratulations! You won! 😃';
+    popup.style.display = 'flex';
+  }
 }
 
-function doubleMoney() {
-  data = data.map((user) => {
-    return {
-      ...user,
-      money: user.money * 2,
-    };
+function updateWrongLettersEl() {
+  wrongLettersEl.innerHTML = `
+  ${wrongLetters.length > 0 ? '<p>Wrong</p>' : ''}
+  ${wrongLetters.map((letter) => `<span>${letter}</span>`)}
+  `;
+
+  figureParts.forEach((part, index) => {
+    const errors = wrongLetters.length;
+
+    if (index < errors) {
+      part.style.display = 'block';
+    } else {
+      part.style.display = 'none';
+    }
   });
-  updateDOM();
+
+  if (wrongLetters.length === figureParts.length) {
+    finalMessage.innerText = 'Unfortunately you lost. 😕';
+    popup.style.display = 'flex';
+  }
 }
 
-function sortByRichest() {
-  data.sort((a, b) => {
-    return b.money - a.money;
-  });
-  updateDOM();
+function showNotification() {
+  notification.classList.add('show');
+
+  setTimeout(() => {
+    notification.classList.remove('show');
+  }, 2000);
 }
 
-function showOnlyMillionaires() {
-  data = data.filter((item) => {
-    return item.money > 1000000;
-  });
-  updateDOM();
-}
+window.addEventListener('keydown', (e) => {
+  if (e.code >= 'KeyA' && e.code <= 'KeyZ') {
+    const letter = e.key;
 
-function calculateWealth() {
-  const wealth = data.reduce((acc, user) => (acc += user.money), 0);
-  const wealthElement = document.createElement('div');
-  wealthElement.innerHTML = `<h3>Total Wealth: <strong
-  >${formatMoney(wealth)}</strong></h3>`;
+    if (selectedWord.includes(letter)) {
+      if (!correctLetters.includes(letter)) {
+        correctLetters.push(letter);
 
-  main.appendChild(wealthElement);
-}
+        displayWord();
+      } else {
+        showNotification();
+      }
+    } else {
+      if (!wrongLetters.includes(letter)) {
+        wrongLetters.push(letter);
 
-function addData(obj) {
-  data.push(obj);
+        updateWrongLettersEl();
+      } else {
+        showNotification();
+      }
+    }
+  }
+});
 
-  updateDOM();
-}
+playAgainBtn.addEventListener('click', () => {
+  correctLetters.splice(0);
+  wrongLetters.splice(0);
 
-function updateDOM(providedData = data) {
-  main.innerHTML = '<h2><strong>Person</strong> Wealth</h2>';
+  selectedWord = words[Math.floor(Math.random() * words.length)];
 
-  providedData.forEach((item) => {
-    const element = document.createElement('div');
-    element.classList.add('person');
-    element.innerHTML = `<strong>${item.name}</strong> ${formatMoney(item.money)}`;
-    main.appendChild(element);
-  });
-}
+  displayWord();
 
-function formatMoney(number) {
-  return '$' + number.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
-}
+  updateWrongLettersEl();
 
-addUserBtn.addEventListener('click', getRandomUser);
-doubleBtn.addEventListener('click', doubleMoney);
-sortBtn.addEventListener('click', sortByRichest);
-showMillionairesBtn.addEventListener('click', showOnlyMillionaires);
-calculateWealthBtn.addEventListener('click', calculateWealth);
+  popup.style.display = 'none';
+});
+
+displayWord();
